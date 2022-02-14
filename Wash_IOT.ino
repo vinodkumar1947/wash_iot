@@ -10,6 +10,12 @@ const int ledPin1 = 16;  // 16 corresponds to GPIO16
 const int ledPin2 = 17; // 17 corresponds to GPIO17
 const int ledPin3 = 5;  // 5 corresponds to GPIO5
 int LED_BUILTIN =2;
+int analogPin = 4; // D4
+int val =0;
+int i =0;
+char door_status =0;
+char Pulse_received =0;
+                    
 BLEServer *pServer = NULL;
 BLECharacteristic * pTxCharacteristic;
 bool deviceConnected = false;
@@ -72,6 +78,9 @@ class MyCallbacks: public BLECharacteristicCallbacks {
   }
         }
 else if(rxValue == "XFQ729"){
+  Pulse_received =1;
+  door_status =0;
+  Serial.println("Sent Pulse to WM from ESP");
 // Increase the LED brightness
 for(int dutyCycle = 0; dutyCycle <= 255; dutyCycle++){   
     // changing the LED brightness with PWM
@@ -85,8 +94,9 @@ for(int dutyCycle = 0; dutyCycle <= 255; dutyCycle++){
     ledcWrite(ledChannel, dutyCycle);   
     delay(15);
   }
+  
   if (deviceConnected) {
-    Serial.println("Am in 3 Connected if");
+    Serial.println("ESP sent return value 1 to App for confirmation");
       pTxCharacteristic->setValue("1");
         //pTxCharacteristic->setValue(&tx_Sucess_Value, 1);
         pTxCharacteristic->notify();
@@ -122,7 +132,7 @@ void setup() {
   ledcAttachPin(ledPin3, ledChannel);
   
   // Create the BLE Device
-  BLEDevice::init("CLAUN12");
+  BLEDevice::init("CLAUN3");
 
   // Create the BLE Server
   pServer = BLEDevice::createServer();
@@ -162,7 +172,44 @@ void loop() {
        // txValue++;
     //delay(10); // bluetooth stack will go into congestion, if too many packets are sent
   //}
+ val = analogRead(analogPin);  // read the input pin
+ float voltage= val * (3.3 / 4095);//12-bit ADC
+  Serial.println(voltage);          // debug value
+  if(voltage >3.0){
+    Serial.println("Machine is Running");
+    door_status =1;
+  }
+  if( (Pulse_received ==1))
+  {
+    // Increase the LED brightness
+for(int dutyCycle = 0; dutyCycle <= 255; dutyCycle++){   
+    // changing the LED brightness with PWM
+    ledcWrite(ledChannel, dutyCycle);
+    delay(15);
+  }
 
+  // decrease the LED brightness
+  for(int dutyCycle = 255; dutyCycle >= 0; dutyCycle--){
+    // changing the LED brightness with PWM
+    ledcWrite(ledChannel, dutyCycle);   
+    delay(15);
+  }
+  Serial.println("Am retrying for door verification");
+  i++;
+  Serial.println(i);
+  if(door_status ==1){
+  Pulse_received =0;
+  door_status =0;
+  }
+  delay(100);
+  }
+
+  if(i>10){
+      Serial.println("Restarting....");
+ESP.restart();
+
+  }
+delay(1500);
     // disconnecting
     if (!deviceConnected && oldDeviceConnected) {
         delay(500); // give the bluetooth stack the chance to get things ready
