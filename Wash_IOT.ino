@@ -1,11 +1,10 @@
-
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
 
 // the number of the LED pin
-const int ledPin = 2;  // 16 corresponds to GPIO16
+const int ledPin = 2;  // 16 corresponds to GPIO16 //D2
 const int ledPin1 = 16;  // 16 corresponds to GPIO16
 const int ledPin2 = 17; // 17 corresponds to GPIO17
 const int ledPin3 = 5;  // 5 corresponds to GPIO5
@@ -15,6 +14,7 @@ int val =0;
 int i =0;
 char door_status =0;
 char Pulse_received =0;
+int long duration;
                     
 BLEServer *pServer = NULL;
 BLECharacteristic * pTxCharacteristic;
@@ -24,7 +24,7 @@ uint8_t tx_Failure_Value = 0;
 uint8_t tx_Sucess_Value =1;
 
 // setting PWM properties
-const int freq = 5000;
+const int freq = 10000;
 const int ledChannel = 0;
 const int resolution = 8;
 
@@ -132,7 +132,7 @@ void setup() {
   ledcAttachPin(ledPin3, ledChannel);
   
   // Create the BLE Device
-  BLEDevice::init("CLAUN3");
+  BLEDevice::init("CLAUN6");
 
   // Create the BLE Server
   pServer = BLEDevice::createServer();
@@ -165,6 +165,12 @@ void setup() {
 }
 
 void loop() {
+  duration = pulseIn(ledPin, HIGH);
+  Serial.println("pH:%d");
+   Serial.println(duration);
+   duration = pulseIn(ledPin, LOW);
+  Serial.println("pL:%d");
+   Serial.println(duration);
 
  //   if (deviceConnected) {
    //     pTxCharacteristic->setValue(&txValue, 1);
@@ -181,18 +187,20 @@ void loop() {
   }
   if( (Pulse_received ==1))
   {
+    Serial.println("Am in inc PWM....");
     // Increase the LED brightness
 for(int dutyCycle = 0; dutyCycle <= 255; dutyCycle++){   
     // changing the LED brightness with PWM
     ledcWrite(ledChannel, dutyCycle);
-    delay(15);
+    delay(5);
   }
-
+ Serial.println("Am in dec PWM....");
   // decrease the LED brightness
   for(int dutyCycle = 255; dutyCycle >= 0; dutyCycle--){
     // changing the LED brightness with PWM
     ledcWrite(ledChannel, dutyCycle);   
-    delay(15);
+    delay(5);
+  
   }
   Serial.println("Am retrying for door verification");
   i++;
@@ -204,7 +212,7 @@ for(int dutyCycle = 0; dutyCycle <= 255; dutyCycle++){
   delay(100);
   }
 
-  if(i>10){
+  if(i>5){
       Serial.println("Restarting....");
 ESP.restart();
 
